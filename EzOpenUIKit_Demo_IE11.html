@@ -1,0 +1,228 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <title>EzUIKit控件 demo</title>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  </head>
+  <style type="text/css">
+	body {background-color: lightblue}
+	table {
+		BORDER-COLLAPSE: collapse;
+		border-style:dotted;
+		border-color:#7CCD7C;
+	}
+  </style>
+ <body onload="init()"><center>
+  <table border=1 width="1400">
+ 
+    	<tr><td width="255">
+        <object classid="clsid:54FC7795-1014-4BF6-8BA3-500C61EC1A05" id="EzUIKitOcx" width="400" height="400" name="EzUIKitOcx" ></object>
+        </td><td valign="bottom">
+
+
+	<table border >
+		<tr><td>
+<table border="1" width="1000" height="120">
+	<tr height="20" width="300">
+	<th style="background-color:#7CCD7C;">取流______步骤(开始预览 <--> 停止预览)</th>
+	<tr>
+	<td>
+		<table border width="1200" height="100">
+			<tr>
+				<td>
+					<input type="button" value="开始播放" onclick="StartPlay()" style="display:block" id="startplaybtn">
+					<input type="button" value="结束播放" onclick="StopPlay()" style="display:none" id="stopplaybtn">
+					</td>
+				<td><textarea rows=8 cols=70 id="dataPanel"></textarea></td>
+			</tr>
+			<tr>
+				<td>播放结果</td>
+				<td><textarea rows=8 cols=70 id="showPanel" value=""></textarea></td>
+			</tr>
+		</table>
+	</td>
+		
+	</tr>      
+</table>
+	</table>
+	</td></tr>
+	
+</table>		
+	</table>
+  </table>
+
+  
+</script>
+</center>
+
+<script type="text/javascript">
+
+	//play exception 
+	var INS_PLAY_EXCEPTION = 0;
+	//play reconnect
+	var INS_PLAY_RECONNECT = 1;
+	//play reconnect exception 
+	var INS_PLAY_RECONNECT_EXCEPTION = 2;
+	//play start
+	var INS_PLAY_START = 3;
+	//play stop
+	var INS_PLAY_STOP = 4;
+	
+	var gAppKey;
+	var gAccessToken;
+	
+	function init() {
+		TestActiveX();
+		var text = '{ \n' +
+		' "AppKey":"596372da86f84628945da2476960ed9a", \n' +
+		' "AccessToken":"at.5nn1d21p6ucmit3wbbwbgvp9copgsbhm-54uoo7yr4r-1r012n5-wgqpkksiy", \n' +
+		' "Url":"ezopen://RXUVSV@open.ys7.com/701749234/1.hd.live" \n}';
+		var showpanel = document.getElementById("dataPanel"); //获取显示的窗口
+
+		showpanel.value = text;
+	}
+	
+	//预览函数
+	function StartPlay() {
+		//得到控件引用
+		var playOcx = document.getElementById("EzUIKitOcx");
+		if(!playOcx)
+		{
+			alert("EzUIKitOcx can't find!");
+			return ;
+		}
+		//获取取流参数
+		var streamparams = document.getElementById("dataPanel").value;
+		var streamobj = JSON.parse(streamparams);
+		if (!streamobj)
+		{
+			alert("Get stream params invalid!");
+			return ;
+		}
+		var appkey = streamobj.AppKey;
+		var accesstoken = streamobj.AccessToken;
+		var ezurl = streamobj.Url;
+		//检测取流参数
+		if(appkey=="")
+		{
+			alert("Appkey is empty!");
+			return ;
+		}
+		if(accesstoken=="")
+		{
+			alert("Accesstoken is empty!");
+			return ;
+		}
+		if(ezurl=="")
+		{
+			alert("EzUrl is empty!");
+			return ;
+		}
+		//alert(appkey);
+		//alert(accesstoken);
+		//alert(ezurl);
+		//设置appkey
+		//判断参数是否初始化过
+		if(gAppKey != appkey) 
+		{
+			var res = playOcx.InitWithAppKey(appkey);
+			if(0 != res)
+			{
+				alert("Init appkey Error!");
+				return;
+			}
+			gAppKey = appkey;
+			//alert("Init appkey success.");
+		}
+		//设置
+		if(gAccessToken != accesstoken) 
+		{
+			var res = playOcx.SetAccessToken(accesstoken);
+			if(0 != res)
+			{
+				alert("Init accesstoken Error!");
+				return;
+			}
+			gAccessToken = accesstoken;
+			//alert("Init accesstoken success.");
+		}
+		//清理播放结果窗口
+		var showpanel = document.getElementById("showPanel"); //获取显示的窗口
+		showpanel.value = "";
+		//开始播放, 播放结果 根据 PluginEventHandler 回调函数
+		var res = playOcx.StartPlay(ezurl);
+		if(0 != res)
+		{
+			alert("startplay failed! check ezurl!");
+			return ;
+		}
+		//alert("Startplay success.");
+	}
+	
+	function StopPlay() {
+		//清理播放结果窗口
+		var showpanel = document.getElementById("showPanel"); //获取显示的窗口
+		showpanel.value = "";
+		var playOcx = document.getElementById("EzUIKitOcx");//得到控件引用
+		var res = playOcx.StopPlay();
+		if(0 != res)
+		{
+			alert("StopPlay Error！");
+		}
+	}
+    
+
+	
+	function TestActiveX()
+	{
+		try {  
+				var ax = new ActiveXObject("EZOPENUIACTIVEXK.EzOpenUIActiveXKCtrl.1");  
+				bInstall = true;
+				//alert("已安装");  
+			} catch(e) {  
+				alert("未安装");  
+			}  
+	}
+	
+    function PluginEventHandler(lEventType, strErrorCode, lInterErrorCode){
+
+		var showpanel = document.getElementById("showPanel"); //获取显示的窗口
+		switch(lEventType)
+		{
+			case INS_PLAY_START:		//播放开始
+			{
+				var info = "播放成功!";
+				showpanel.value = info;
+				document.getElementById('startplaybtn').style.display='none';
+				document.getElementById('stopplaybtn').style.display='block';
+				break;
+			}
+			case INS_PLAY_EXCEPTION:	//播放异常
+			{
+				var info = "播放失败, 错误码:" + strErrorCode + ", 内部错误码:" +  lInterErrorCode;
+				showpanel.value = info;
+				break;
+			}
+			case INS_PLAY_STOP:			//播放停止
+			{
+				document.getElementById('startplaybtn').style.display='block';
+				document.getElementById('stopplaybtn').style.display='none';
+				break;
+			}
+		}
+		//alert(lEventType+ ":"+strErrorCode);
+	
+	}
+	
+	window.unload = function(){
+		alert("unload");
+	}
+	
+	</script>
+
+   
+<script language="javascript" for="EzUIKitOcx" event="PluginEventHandler(lEventType, strErrorCode, lInterErrorCode)">   //打开预览时触发该事件
+		PluginEventHandler(lEventType, strErrorCode, lInterErrorCode);
+</script>
+</body>
+</html>
